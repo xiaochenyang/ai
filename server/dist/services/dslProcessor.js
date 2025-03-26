@@ -13,18 +13,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DSLProcessor = void 0;
-const dsl_1 = require("../models/dsl");
+const db_1 = require("../config/db");
+const dsl_1 = require("../entities/dsl");
 const openai_1 = __importDefault(require("openai"));
-const openai = new openai_1.default({
-    apiKey: process.env.OPENAI_API_KEY
-});
+const typeorm_1 = require("typeorm");
 class DSLProcessor {
+    static getOpenAIClient() {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is not set');
+        }
+        return new openai_1.default({
+            apiKey: process.env.OPENAI_API_KEY,
+            baseURL: 'https://api.deepseek.com/v1'
+        });
+    }
     // 生成DSL的自然语言描述
     static generateNaturalLanguage(dsl) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             try {
+                console.log('Generating natural language for DSL:', JSON.stringify(dsl, null, 2));
+                const openai = this.getOpenAIClient();
                 const response = yield openai.chat.completions.create({
-                    model: "gpt-4",
+                    model: "deepseek-chat",
                     messages: [
                         {
                             role: "system",
@@ -36,11 +47,19 @@ class DSLProcessor {
                         }
                     ],
                     temperature: 0.7,
+                    max_tokens: 1000
                 });
-                return response.choices[0].message.content || '';
+                console.log('API Response:', JSON.stringify(response, null, 2));
+                const result = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || '';
+                console.log('Generated natural language:', result);
+                return result;
             }
             catch (error) {
                 console.error('Error generating natural language:', error);
+                if (error instanceof Error) {
+                    console.error('Error details:', error.message);
+                    console.error('Error stack:', error.stack);
+                }
                 throw error;
             }
         });
@@ -50,14 +69,18 @@ class DSLProcessor {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // 获取所有没有自然语言描述的DSL
-                const dsls = yield dsl_1.DSL.find({ naturalLanguage: { $exists: false } });
+                const dsls = yield this.dslRepository.find({
+                    where: {
+                        naturalLanguage: (0, typeorm_1.IsNull)()
+                    }
+                });
                 const trainingData = [];
                 for (const dsl of dsls) {
                     // 生成自然语言描述
                     const naturalLanguage = yield this.generateNaturalLanguage(dsl.dsl);
                     // 更新数据库
                     dsl.naturalLanguage = naturalLanguage;
-                    yield dsl.save();
+                    yield this.dslRepository.save(dsl);
                     // 添加到训练数据集
                     trainingData.push({
                         input: naturalLanguage,
@@ -76,7 +99,11 @@ class DSLProcessor {
     static exportTrainingData() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const dsls = yield dsl_1.DSL.find({ naturalLanguage: { $exists: true } });
+                const dsls = yield this.dslRepository.find({
+                    where: {
+                        naturalLanguage: (0, typeorm_1.Not)((0, typeorm_1.IsNull)())
+                    }
+                });
                 return dsls.map(dsl => ({
                     input: dsl.naturalLanguage,
                     output: dsl.dsl
@@ -124,3 +151,4 @@ class DSLProcessor {
     }
 }
 exports.DSLProcessor = DSLProcessor;
+DSLProcessor.dslRepository = db_1.AppDataSource.getRepository(dsl_1.DSL);

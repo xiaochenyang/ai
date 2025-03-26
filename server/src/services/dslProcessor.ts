@@ -4,9 +4,10 @@ import OpenAI from 'openai';
 import { IsNull, Not } from 'typeorm';
 
 export class DSLProcessor {
-  private static dslRepository = AppDataSource.getRepository(DSL);
+  // 注释掉数据库相关代码
+  // private static dslRepository = AppDataSource.getRepository(DSL);
 
-  private static getOpenAIClient() {
+  static getOpenAIClient() {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY environment variable is not set');
     }
@@ -51,8 +52,23 @@ export class DSLProcessor {
     }
   }
 
-  // 处理所有现有DSL并生成训练数据集
+  // 处理所有现有DSL并生成训练数据集 - 返回模拟数据
   static async processExistingDSLs(): Promise<Array<{ input: string, output: Record<string, any>; }>> {
+    console.log('数据库功能已禁用，返回模拟数据');
+    return [
+      {
+        input: "这是一个登录表单，包含用户名和密码输入框",
+        output: {
+          "page": {
+            "parentKey": "-",
+            "childrenKeys": ["username", "password", "submit"],
+            "style": {},
+            "componentProps": {}
+          }
+        }
+      }
+    ];
+    /*
     try {
       // 获取所有没有自然语言描述的DSL
       const dsls = await this.dslRepository.find({
@@ -83,10 +99,26 @@ export class DSLProcessor {
       console.error('Error processing DSLs:', error);
       throw error;
     }
+    */
   }
 
-  // 导出训练数据集
+  // 导出训练数据集 - 返回模拟数据
   static async exportTrainingData(): Promise<Array<{ input: string, output: Record<string, any>; }>> {
+    console.log('数据库功能已禁用，返回模拟数据');
+    return [
+      {
+        input: "这是一个登录表单，包含用户名和密码输入框",
+        output: {
+          "page": {
+            "parentKey": "-",
+            "childrenKeys": ["username", "password", "submit"],
+            "style": {},
+            "componentProps": {}
+          }
+        }
+      }
+    ];
+    /*
     try {
       const dsls = await this.dslRepository.find({
         where: {
@@ -102,6 +134,7 @@ export class DSLProcessor {
       console.error('Error exporting training data:', error);
       throw error;
     }
+    */
   }
 
   // 分析DSL结构规律
