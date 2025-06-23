@@ -78,15 +78,59 @@ export class LowcodeDslService {
    * 将自然语言描述转换为低代码DSL（支持多轮对话）
    * @param description 自然语言描述
    * @param sessionId 可选的会话ID
+   * @param onMessage 流式消息回调函数
    * @returns 转换结果，包含DSL对象和会话ID
    */
-  static async generateDslFromDescriptionWithContext(description: string, sessionId?: string) {
+  static async generateDslFromDescriptionWithContext(
+    description: string, 
+    sessionId?: string,
+    onMessage?: (event: string, data: any) => void
+  ) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/lowcode-dsl/generate-dsl-with-context`, {
-        description,
-        sessionId
+      const response = await fetch(`${API_BASE_URL}/lowcode-dsl/generate-dsl-with-context`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description,
+          sessionId
+        })
       });
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Failed to get response reader');
+      }
+
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            const event = line.slice(7);
+            const dataLine = lines[lines.indexOf(line) + 1];
+            if (dataLine?.startsWith('data: ')) {
+              const data = JSON.parse(dataLine.slice(6));
+              onMessage?.(event, data);
+            }
+          }
+        }
+      }
+
+      return true;
     } catch (error) {
       console.error('Error generating DSL from description with context:', error);
       throw error;

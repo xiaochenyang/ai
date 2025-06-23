@@ -130,15 +130,35 @@ router.post('/generate-dsl-with-context', async (req, res) => {
       });
     }
 
-    const result = await lowcodeDslService.generateDslFromDescriptionWithContext(description, sessionId);
+    // 设置响应头，表明这是一个流式响应
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
-    res.json({
-      success: true,
-      data: {
+    // 创建一个函数来发送SSE消息
+    const sendSSE = (event: string, data: any) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    try {
+      // 开始生成DSL
+      const result = await lowcodeDslService.generateDslFromDescriptionWithContext(description, sessionId);
+      
+      // 发送成功消息
+      sendSSE('success', {
         dsl: result.dsl,
         sessionId: result.sessionId
-      }
-    });
+      });
+    } catch (error) {
+      // 发送错误消息
+      sendSSE('error', {
+        error: 'Failed to generate DSL from description'
+      });
+    } finally {
+      // 结束流
+      res.end();
+    }
   } catch (error) {
     console.error('Error generating DSL from description:', error);
     res.status(500).json({

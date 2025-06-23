@@ -121,24 +121,22 @@ const LowcodeDslConversation: React.FC = () => {
 
     try {
       setLoading(true);
-      const response =
-        await LowcodeDslService.generateDslFromDescriptionWithContext(
-          naturalLanguage,
-          sessionId || undefined
-        );
-
-      if (response.success) {
-        setSessionId(response.data.sessionId);
-        setDslJson(JSON.stringify(response.data.dsl, null, 2));
-        setActiveTab("2");
-
-        // 获取更新后的会话消息
-        await fetchConversationMessages();
-
-        message.success("DSL生成成功");
-      } else {
-        message.error(response.error || "生成DSL失败");
-      }
+      await LowcodeDslService.generateDslFromDescriptionWithContext(
+        naturalLanguage,
+        sessionId || undefined,
+        (event, data) => {
+          if (event === 'success') {
+            setSessionId(data.sessionId);
+            setDslJson(JSON.stringify(data.dsl, null, 2));
+            setActiveTab("2");
+            message.success("DSL生成成功");
+            // 获取更新后的会话消息
+            fetchConversationMessages();
+          } else if (event === 'error') {
+            message.error(data.error || "生成DSL失败");
+          }
+        }
+      );
     } catch (error) {
       message.error("生成DSL失败");
       console.error(error);
