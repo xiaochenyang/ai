@@ -16,12 +16,6 @@
             "dest": "src/index.ts"
         }
     ],
-    "functions": {
-        "src/index.ts": {
-            "maxDuration": 30,
-            "memory": 1024
-        }
-    },
     "env": {
         "NODE_ENV": "production"
     }
