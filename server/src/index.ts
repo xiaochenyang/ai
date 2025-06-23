@@ -27,7 +27,7 @@ const port = process.env.PORT || 3001;
 // 初始化数据库连接
 AppDataSource.initialize()
   .then(() => {
-    console.log('Data Source has been initialized! (模拟模式)');
+    console.log('Data Source has been initialized!   (模拟模式)');
   })
   .catch((error: Error) => {
     // 不要崩溃，只记录错误
