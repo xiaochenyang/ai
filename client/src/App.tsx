@@ -99,7 +99,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apiUrl = "http://ai-server-seven-iota.vercel.app";
+  const apiUrl = "https://ai-server-seven-iota.vercel.app";
 
   // 1. 从Mock DSL生成自然语言描述
   const handleGenerateNaturalLanguage = async () => {
