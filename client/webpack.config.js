@@ -134,7 +134,7 @@ module.exports = (env, argv) => {
       open: true,
       historyApiFallback: true,
       proxy: {
-        "/api": "http://localhost:3000",
+        "/api": "http://ai-server-seven-iota.vercel.app",
       },
     },
   };

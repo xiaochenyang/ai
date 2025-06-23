@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import express from 'express';
 import { Request, Response } from 'express';
-import cors from 'cors';
 import { config } from 'dotenv';
 import { AppDataSource } from './config/db';
 import dslRoutes from './routes/dsl';
@@ -10,6 +9,7 @@ import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import healthRoutes from './routes/health';
 import lowcodeDslRoutes from './lowcodeDsl/routes/lowcodeDsl';
+import { corsMiddleware, corsPreflightMiddleware } from './config/cors';
 
 // 加载环境变量
 config();
@@ -35,8 +35,21 @@ AppDataSource.initialize()
     // process.exit(1); // 注释掉退出程序的代码
   });
 
-app.use(cors());
+// 应用 CORS 中间件
+app.use(corsMiddleware);
+app.use(corsPreflightMiddleware);
+
 app.use(express.json());
+
+// 全局错误处理中间件
+app.use((err: any, req: Request, res: Response, next: any) => {
+  console.error('Global error handler:', err);
+  res.status(500).json({
+    success: false,
+    error: 'Internal Server Error',
+    message: err.message
+  });
+});
 
 // 路由
 app.use('/api/auth', authRoutes);
@@ -138,6 +151,14 @@ app.post('/api/generate-description', async (req: Request, res: Response) => {
       error: 'Internal Server Error'
     });
   }
+});
+
+// 健康检查接口
+app.get('/api/health-check', (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.listen(port, () => {
