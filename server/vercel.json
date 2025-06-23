@@ -5,5 +5,24 @@
             "src": "src/index.ts",
             "use": "@vercel/node"
         }
-    ]
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "src/index.ts"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "src/index.ts"
+        }
+    ],
+    "functions": {
+        "src/index.ts": {
+            "maxDuration": 30,
+            "memory": 1024
+        }
+    },
+    "env": {
+        "NODE_ENV": "production"
+    }
 }
